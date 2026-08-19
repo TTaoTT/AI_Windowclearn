@@ -1,0 +1,23 @@
+# 个人/环境
+.workbuddy/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# 构建产物
+dist/
+build/
+*.spec
+cdisk_bak*
+build_bak*
+
+# IDE / 系统
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

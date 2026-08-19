@@ -1,0 +1,140 @@
+# 可迁移规则库（migrate_rules）
+# risk: L1(低风险,官方重定向) / L2(中风险,junction) / L3(高风险,junction大型软件)
+# method: shell_folder_redirect(改注册表) / junction(目录联接) / system_move(UWP/WSL官方通道)
+# associated_processes: 迁移前需结束的进程
+rules:
+  - id: user_downloads
+    description: "用户「下载」文件夹"
+    match:
+      paths: ["%USERPROFILE%\\Downloads"]
+    risk: L1
+    method: shell_folder_redirect
+    associated_processes: []
+    os_min: "10.0"
+
+  - id: user_desktop
+    description: "用户「桌面」文件夹"
+    match:
+      paths: ["%USERPROFILE%\\Desktop"]
+    risk: L1
+    method: shell_folder_redirect
+    associated_processes: []
+    os_min: "10.0"
+
+  - id: user_documents
+    description: "用户「文档」文件夹"
+    match:
+      paths: ["%USERPROFILE%\\Documents"]
+    risk: L1
+    method: shell_folder_redirect
+    associated_processes: []
+    os_min: "10.0"
+
+  - id: user_pictures
+    description: "用户「图片」文件夹"
+    match:
+      paths: ["%USERPROFILE%\\Pictures"]
+    risk: L1
+    method: shell_folder_redirect
+    associated_processes: []
+    os_min: "10.0"
+
+  - id: user_videos
+    description: "用户「视频」文件夹"
+    match:
+      paths: ["%USERPROFILE%\\Videos"]
+    risk: L1
+    method: shell_folder_redirect
+    associated_processes: []
+    os_min: "10.0"
+
+  - id: appdata_tencent
+    description: "腾讯系(微信/QQ)本地数据"
+    match:
+      paths: ["%LOCALAPPDATA%\\Tencent"]
+    risk: L2
+    method: junction
+    associated_processes: ["WeChat.exe", "QQ.exe"]
+    os_min: "10.0"
+
+  - id: appdata_jetbrains
+    description: "JetBrains IDE 配置与缓存"
+    match:
+      paths: ["%APPDATA%\\JetBrains", "%LOCALAPPDATA%\\JetBrains"]
+    risk: L2
+    method: junction
+    associated_processes: ["idea64.exe", "pycharm64.exe", "clion64.exe"]
+    os_min: "10.0"
+
+  - id: browser_chrome
+    description: "Chrome 用户数据(缓存/配置)"
+    match:
+      paths: ["%LOCALAPPDATA%\\Google"]
+    risk: L2
+    method: junction
+    associated_processes: ["chrome.exe"]
+    os_min: "10.0"
+
+  - id: browser_edge
+    description: "Edge 用户数据(缓存/配置)"
+    match:
+      paths: ["%LOCALAPPDATA%\\Microsoft\\Edge"]
+    risk: L2
+    method: junction
+    associated_processes: ["msedge.exe"]
+    os_min: "10.0"
+
+  - id: teams_cache
+    description: "Microsoft Teams 本地缓存"
+    match:
+      paths: ["%LOCALAPPDATA%\\Microsoft\\Teams"]
+    risk: L2
+    method: junction
+    associated_processes: ["ms-teams.exe", "Teams.exe"]
+    os_min: "10.0"
+
+  - id: dev_cargo
+    description: "Rust cargo / rustup"
+    match:
+      paths: ["%USERPROFILE%\\.cargo", "%USERPROFILE%\\.rustup"]
+    risk: L2
+    method: junction
+    associated_processes: []
+    os_min: "10.0"
+
+  - id: dev_vscode
+    description: "VS Code 用户配置"
+    match:
+      paths: ["%USERPROFILE%\\.vscode"]
+    risk: L2
+    method: junction
+    associated_processes: ["Code.exe"]
+    os_min: "10.0"
+
+  - id: dev_npm
+    description: "npm / pnpm 缓存"
+    match:
+      paths: ["%USERPROFILE%\\.npm", "%USERPROFILE%\\.pnpm-store"]
+    risk: L2
+    method: junction
+    associated_processes: []
+    os_min: "10.0"
+
+  - id: dev_maven_gradle
+    description: "Maven(.m2) / Gradle 仓库"
+    match:
+      paths: ["%USERPROFILE%\\.m2", "%USERPROFILE%\\.gradle"]
+    risk: L2
+    method: junction
+    associated_processes: []
+    os_min: "10.0"
+
+  - id: wsl_data
+    description: "WSL 运行数据"
+    match:
+      paths: ["%LOCALAPPDATA%\\wsl"]
+    risk: L2
+    method: junction
+    associated_processes: []
+    pre_command: "wsl --shutdown"
+    os_min: "10.0"

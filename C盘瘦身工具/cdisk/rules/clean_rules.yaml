@@ -1,0 +1,109 @@
+# 可清理规则库（clean_rules）
+# risk: safe(安全) / cautious(谨慎) / danger(高危)
+# action: recycle(送回收站) / delete(硬删) / system_api(走系统通道)
+# age_days: 仅删除早于该天数的文件（0 表示不限）
+rules:
+  - id: windows_temp
+    description: "Windows 系统临时文件"
+    match:
+      paths: ["C:\\Windows\\Temp\\*", "%TEMP%\\*", "%LOCALAPPDATA%\\Temp\\*"]
+      age_days: 0
+    risk: safe
+    action: recycle
+    os_min: "10.0"
+
+  - id: updater_cache
+    description: "Windows 更新缓存 (SoftwareDistribution\\Download)"
+    match:
+      paths: ["C:\\Windows\\SoftwareDistribution\\Download\\*"]
+      age_days: 1
+    risk: safe
+    action: system_api
+    system_cmd: "stop_wuauserv"
+    os_min: "10.0"
+
+  - id: thumbcache
+    description: "资源管理器缩略图缓存"
+    match:
+      paths: ["%LOCALAPPDATA%\\Microsoft\\Windows\\Explorer\\ThumbCache_*.db"]
+      age_days: 0
+    risk: safe
+    action: recycle
+    os_min: "10.0"
+
+  - id: recycle_bin
+    description: "回收站"
+    match:
+      paths: ["$Recycle.Bin\\*"]
+      age_days: 0
+    risk: safe
+    action: recycle
+    os_min: "10.0"
+
+  - id: browser_cache_chrome
+    description: "Chrome 浏览器缓存"
+    match:
+      paths: ["%LOCALAPPDATA%\\Google\\Chrome\\User Data\\*\\Cache\\*", "%LOCALAPPDATA%\\Google\\Chrome\\User Data\\*\\Code Cache\\*"]
+      age_days: 0
+    risk: safe
+    action: recycle
+    associated_processes: ["chrome.exe"]
+    os_min: "10.0"
+
+  - id: browser_cache_edge
+    description: "Edge 浏览器缓存"
+    match:
+      paths: ["%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\*\\Cache\\*"]
+      age_days: 0
+    risk: safe
+    action: recycle
+    associated_processes: ["msedge.exe"]
+    os_min: "10.0"
+
+  - id: app_cache_tencent
+    description: "腾讯系(微信/QQ)缓存"
+    match:
+      paths: ["%LOCALAPPDATA%\\Tencent\\*\\*Cache*\\*", "%LOCALAPPDATA%\\Tencent\\*\\FileStorage\\*"]
+      age_days: 0
+    risk: safe
+    action: recycle
+    associated_processes: ["WeChat.exe", "QQ.exe"]
+    os_min: "10.0"
+
+  - id: crash_dumps
+    description: "崩溃转储文件"
+    match:
+      paths: ["%LOCALAPPDATA%\\CrashDumps\\*", "C:\\*.dmp"]
+      age_days: 7
+    risk: safe
+    action: recycle
+    os_min: "10.0"
+
+  - id: old_logs
+    description: "旧日志文件(>30天)"
+    match:
+      paths: ["C:\\Windows\\*.log", "%LOCALAPPDATA%\\*\\logs\\*\\*.log"]
+      age_days: 30
+    risk: cautious
+    action: recycle
+    os_min: "10.0"
+
+  - id: winsxs_redundant
+    description: "WinSxS 被取代组件(需 DISM 安全回收)"
+    match:
+      paths: ["C:\\Windows\\WinSxS\\*"]
+      age_days: 0
+    risk: cautious
+    action: system_api
+    system_cmd: "dism_startcomponentcleanup"
+    os_min: "10.0"
+
+  - id: hibernate_file
+    description: "休眠文件 hiberfil.sys(关闭休眠释放空间)"
+    match:
+      paths: ["C:\\hiberfil.sys"]
+      age_days: 0
+    risk: danger
+    action: system_api
+    system_cmd: "powercfg_hibernate_off"
+    os_min: "10.0"

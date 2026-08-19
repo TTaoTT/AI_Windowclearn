@@ -1,0 +1,456 @@
+# 应用迁移画像库（app_profiles）
+# 穷举常见"会往 C 盘塞大文件"的程序，给出：源路径、迁移方式、关联进程、以及迁移后"改哪些配置"。
+#
+# method 取值：
+#   junction          默认方式：物理搬家 + 原路径建目录联接，对程序完全透明，无需改配置（推荐）
+#   config            改配置方式：物理搬家后，用 config_patch 把程序的路径配置指到新位置
+# methods 列表决定该程序的迁移页下拉里出现哪些方式（含 junction 即默认可选透明迁移）。
+#
+# config_patch 规格见 config_patcher.py：set_json / set_xml / set_props / set_ini / set_tres / replace_text / env
+# 模板里 <NEW> = 目标路径，<OLD> = 原路径。
+profiles:
+  # ===================== 开发工具 =====================
+  - id: vscode
+    name: "VS Code"
+    category: "开发工具"
+    description: "编辑器扩展与用户配置"
+    sources: ["%USERPROFILE%\\.vscode"]
+    methods: [junction, config]
+    associated_processes: ["Code.exe"]
+    risk: L2
+    os_min: "10.0"
+    config_patch:
+      - type: set_json
+        file: "%APPDATA%\\Code\\User\\settings.json"
+        set:
+          "extensions.path": "<NEW>\\extensions"
+      - type: env
+        name: VSCODE_EXTENSIONS
+        value: "<NEW>\\extensions"
+
+  - id: nuget
+    name: "NuGet 包缓存"
+    category: "开发工具"
+    description: ".nuget\\packages 全局包缓存"
+    sources: ["%USERPROFILE%\\.nuget"]
+    methods: [junction, config]
+    associated_processes: []
+    risk: L2
+    os_min: "10.0"
+    config_patch:
+      - type: set_xml
+        file: "%APPDATA%\\NuGet\\NuGet.Config"
+        tag: globalPackagesFolder
+        text: "<NEW>\\packages"
+      - type: env
+        name: NUGET_PACKAGES
+        value: "<NEW>\\packages"
+
+  - id: maven
+    name: "Maven 仓库"
+    category: "开发工具"
+    description: ".m2 本地仓库（依赖包）"
+    sources: ["%USERPROFILE%\\.m2"]
+    methods: [junction, config]
+    associated_processes: []
+    risk: L2
+    os_min: "10.0"
+    config_patch:
+      - type: set_xml
+        file: "%USERPROFILE%\\.m2\\settings.xml"
+        tag: localRepository
+        text: "<NEW>\\repository"
+      - type: env
+        name: MAVEN_OPTS
+        value: "-Dmaven.repo.local=<NEW>\\repository"
+
+  - id: gradle
+    name: "Gradle 缓存"
+    category: "开发工具"
+    description: ".gradle 缓存与依赖"
+    sources: ["%USERPROFILE%\\.gradle"]
+    methods: [junction, config]
+    associated_processes: []
+    risk: L2
+    os_min: "10.0"
+    config_patch:
+      - type: set_props
+        file: "%USERPROFILE%\\.gradle\\gradle.properties"
+        key: org.gradle.user.home
+        value: "<NEW>"
+
+  - id: npm
+    name: "npm 缓存"
+    category: "开发工具"
+    description: ".npm 缓存"
+    sources: ["%USERPROFILE%\\.npm"]
+    methods: [junction, config]
+    associated_processes: []
+    risk: L2
+    os_min: "10.0"
+    config_patch:
+      - type: set_props
+        file: "%USERPROFILE%\\.npmrc"
+        key: cache
+        value: "<NEW>"
+
+  - id: pnpm
+    name: "pnpm 存储"
+    category: "开发工具"
+    description: ".pnpm-store 全局存储"
+    sources: ["%USERPROFILE%\\.pnpm-store"]
+    methods: [junction, config]
+    associated_processes: []
+    risk: L2
+    os_min: "10.0"
+    config_patch:
+      - type: set_props
+        file: "%USERPROFILE%\\.npmrc"
+        key: store-dir
+        value: "<NEW>"
+
+  - id: yarn
+    name: "Yarn 缓存"
+    category: "开发工具"
+    description: ".yarn / Yarn 缓存"
+    sources: ["%LOCALAPPDATA%\\Yarn", "%USERPROFILE%\\.yarn"]
+    methods: [junction, config]
+    associated_processes: []
+    risk: L2
+    os_min: "10.0"
+    config_patch:
+      - type: set_props
+        file: "%USERPROFILE%\\.yarnrc"
+        key: cache-folder
+        value: "<NEW>"
+
+  - id: pip
+    name: "pip 缓存"
+    category: "开发工具"
+    description: "Python pip 下载缓存"
+    sources: ["%LOCALAPPDATA%\\pip", "%USERPROFILE%\\.cache\\pip"]
+    methods: [junction, config]
+    associated_processes: []
+    risk: L2
+    os_min: "10.0"
+    config_patch:
+      - type: set_props
+        file: "%APPDATA%\\pip\\pip.ini"
+        key: cache-dir
+        value: "<NEW>"
+
+  - id: conda
+    name: "Conda 环境/包"
+    category: "开发工具"
+    description: ".conda 的 pkgs 与 envs"
+    sources: ["%USERPROFILE%\\.conda"]
+    methods: [junction, config]
+    associated_processes: []
+    risk: L2
+    os_min: "10.0"
+    config_patch:
+      - type: env
+        name: CONDA_PKGS_DIRS
+        value: "<NEW>\\pkgs"
+      - type: env
+        name: CONDA_ENVS_DIRS
+        value: "<NEW>\\envs"
+
+  - id: cargo
+    name: "Cargo (Rust)"
+    category: "开发工具"
+    description: ".cargo 注册表/缓存"
+    sources: ["%USERPROFILE%\\.cargo"]
+    methods: [junction, config]
+    associated_processes: []
+    risk: L2
+    os_min: "10.0"
+    config_patch:
+      - type: env
+        name: CARGO_HOME
+        value: "<NEW>"
+
+  - id: rustup
+    name: "Rustup 工具链"
+    category: "开发工具"
+    description: ".rustup 工具链"
+    sources: ["%USERPROFILE%\\.rustup"]
+    methods: [junction, config]
+    associated_processes: []
+    risk: L2
+    os_min: "10.0"
+    config_patch:
+      - type: env
+        name: RUSTUP_HOME
+        value: "<NEW>"
+
+  - id: go
+    name: "Go 模块缓存"
+    category: "开发工具"
+    description: "GOPATH / GOCACHE / GOMODCACHE"
+    sources: ["%USERPROFILE%\\go"]
+    methods: [junction, config]
+    associated_processes: []
+    risk: L2
+    os_min: "10.0"
+    config_patch:
+      - type: env
+        name: GOPATH
+        value: "<NEW>"
+      - type: env
+        name: GOCACHE
+        value: "<NEW>\\cache"
+      - type: env
+        name: GOMODCACHE
+        value: "<NEW>\\pkg\\mod"
+
+  - id: android_studio
+    name: "Android Studio (AVD/SDK)"
+    category: "开发工具"
+    description: ".android 模拟器与 SDK 缓存"
+    sources: ["%USERPROFILE%\\.android"]
+    methods: [junction, config]
+    associated_processes: ["studio64.exe"]
+    risk: L2
+    os_min: "10.0"
+    config_patch:
+      - type: env
+        name: ANDROID_AVD_HOME
+        value: "<NEW>\\avd"
+      - type: replace_text
+        glob: "avd\\*.ini"
+
+  - id: flutter
+    name: "Flutter / Dart"
+    category: "开发工具"
+    description: ".pub-cache 依赖缓存"
+    sources: ["%USERPROFILE%\\.pub-cache", "%LOCALAPPDATA%\\Pub\\Cache"]
+    methods: [junction, config]
+    associated_processes: []
+    risk: L2
+    os_min: "10.0"
+    config_patch:
+      - type: env
+        name: PUB_CACHE
+        value: "<NEW>"
+
+  - id: node_global
+    name: "npm 全局模块"
+    category: "开发工具"
+    description: "npm 全局安装前缀"
+    sources: ["%APPDATA%\\npm", "%USERPROFILE%\\.npm-global"]
+    methods: [junction, config]
+    associated_processes: []
+    risk: L2
+    os_min: "10.0"
+    config_patch:
+      - type: set_props
+        file: "%USERPROFILE%\\.npmrc"
+        key: prefix
+        value: "<NEW>"
+
+  - id: docker
+    name: "Docker Desktop 数据"
+    category: "开发工具"
+    description: "Docker 镜像/容器数据（settings.json dataFolder）"
+    sources: ["%LOCALAPPDATA%\\Docker", "C:\\ProgramData\\Docker"]
+    methods: [junction, config]
+    associated_processes: ["Docker Desktop.exe", "com.docker.backend.exe"]
+    risk: L3
+    os_min: "10.0"
+    config_patch:
+      - type: set_json
+        file: "%APPDATA%\\Docker\\settings.json"
+        set:
+          "dataFolder": "<NEW>"
+
+  - id: wsl
+    name: "WSL 运行数据"
+    category: "开发工具"
+    description: "WSL 发行版 ext4.vhdx"
+    sources: ["%LOCALAPPDATA%\\wsl", "%LOCALAPPDATA%\\Packages"]
+    methods: [junction]
+    associated_processes: []
+    risk: L2
+    os_min: "10.0"
+    pre_command: "wsl --shutdown"
+    notes: "WSL 数据建议用 wsl --export / --import 官方迁移；此处 junction 仅覆盖 wsl 目录，Packages 含 UWP 不建议动。"
+
+  - id: godot
+    name: "Godot 引擎数据"
+    category: "开发工具"
+    description: "Godot 配置、缓存、导出模板(export_templates)"
+    sources: ["%APPDATA%\\Godot", "%LOCALAPPDATA%\\Godot"]
+    methods: [junction, config]
+    associated_processes: ["Godot*.exe", "godot*.exe"]
+    risk: L2
+    os_min: "10.0"
+    config_patch:
+      - type: replace_text
+        file: "%APPDATA%\\Godot\\editor_settings.tres"
+      - type: replace_text
+        file: "%LOCALAPPDATA%\\Godot\\editor_settings.tres"
+
+  - id: unity
+    name: "Unity 缓存"
+    category: "开发工具"
+    description: "Unity Library/缓存"
+    sources: ["%LOCALAPPDATA%\\Unity"]
+    methods: [junction, config]
+    associated_processes: ["Unity.exe"]
+    risk: L2
+    os_min: "10.0"
+    config_patch:
+      - type: env
+        name: UNITY_CACHE_DIR
+        value: "<NEW>"
+
+  - id: jetbrains
+    name: "JetBrains IDE"
+    category: "开发工具"
+    description: "IDEA/PyCharm/CLion 配置与缓存"
+    sources: ["%APPDATA%\\JetBrains", "%LOCALAPPDATA%\\JetBrains"]
+    methods: [junction, config]
+    associated_processes: ["idea64.exe", "pycharm64.exe", "clion64.exe", "goland64.exe"]
+    risk: L2
+    os_min: "10.0"
+    notes: "junction 透明迁移最稳；若要改配置，编辑各 IDE 安装目录 bin\\idea.properties 的 idea.system.path / idea.config.path / idea.plugins.path。"
+
+  # ===================== 浏览器 =====================
+  - id: chrome
+    name: "Chrome 用户数据"
+    category: "浏览器"
+    description: "Chrome 缓存/配置"
+    sources: ["%LOCALAPPDATA%\\Google\\Chrome"]
+    methods: [junction]
+    associated_processes: ["chrome.exe"]
+    risk: L2
+    os_min: "10.0"
+
+  - id: edge
+    name: "Edge 用户数据"
+    category: "浏览器"
+    description: "Edge 缓存/配置"
+    sources: ["%LOCALAPPDATA%\\Microsoft\\Edge"]
+    methods: [junction]
+    associated_processes: ["msedge.exe"]
+    risk: L2
+    os_min: "10.0"
+
+  - id: firefox
+    name: "Firefox 配置"
+    category: "浏览器"
+    description: "Firefox 用户配置与缓存"
+    sources: ["%APPDATA%\\Mozilla\\Firefox"]
+    methods: [junction, config]
+    associated_processes: ["firefox.exe"]
+    risk: L2
+    os_min: "10.0"
+    config_patch:
+      - type: set_ini
+        file: "%APPDATA%\\Mozilla\\Firefox\\profiles.ini"
+        section: "Profile0"
+        key: IsRelative
+        value: "0"
+
+  - id: brave
+    name: "Brave 用户数据"
+    category: "浏览器"
+    description: "Brave 缓存/配置"
+    sources: ["%LOCALAPPDATA%\\BraveSoftware"]
+    methods: [junction]
+    associated_processes: ["brave.exe"]
+    risk: L2
+    os_min: "10.0"
+
+  # ===================== 通讯/媒体 =====================
+  - id: discord
+    name: "Discord 缓存"
+    category: "通讯/媒体"
+    description: "Discord 本地缓存"
+    sources: ["%APPDATA%\\discord", "%LOCALAPPDATA%\\Discord"]
+    methods: [junction]
+    associated_processes: ["Discord.exe"]
+    risk: L2
+    os_min: "10.0"
+
+  - id: telegram
+    name: "Telegram 数据"
+    category: "通讯/媒体"
+    description: "Telegram 本地数据(tdata)"
+    sources: ["%APPDATA%\\Telegram Desktop"]
+    methods: [junction]
+    associated_processes: ["Telegram.exe"]
+    risk: L2
+    os_min: "10.0"
+
+  - id: obs_studio
+    name: "OBS Studio"
+    category: "通讯/媒体"
+    description: "OBS 配置与缓存"
+    sources: ["%APPDATA%\\obs-studio"]
+    methods: [junction]
+    associated_processes: ["obs64.exe"]
+    risk: L2
+    os_min: "10.0"
+
+  # ===================== 游戏平台 =====================
+  - id: steam
+    name: "Steam 游戏库"
+    category: "游戏平台"
+    description: "Steam 客户端与游戏"
+    sources: ["%PROGRAMFILES(X86)%\\Steam", "C:\\Program Files (x86)\\Steam"]
+    methods: [junction]
+    associated_processes: ["steam.exe"]
+    risk: L3
+    os_min: "10.0"
+    notes: "游戏库建议在 Steam 设置里「添加库文件夹」指向新盘；此处 junction 仅覆盖客户端目录。"
+
+  - id: epic
+    name: "Epic 游戏"
+    category: "游戏平台"
+    description: "Epic 启动器数据"
+    sources: ["%LOCALAPPDATA%\\EpicGamesLauncher"]
+    methods: [junction]
+    associated_processes: ["EpicGamesLauncher.exe"]
+    risk: L3
+    os_min: "10.0"
+
+  # ===================== 系统缓存 =====================
+  - id: d3d_shader_cache
+    name: "DirectX 着色器缓存"
+    category: "系统缓存"
+    description: "D3DSCache 着色器缓存"
+    sources: ["%LOCALAPPDATA%\\D3DSCache"]
+    methods: [junction]
+    associated_processes: []
+    risk: L2
+    os_min: "10.0"
+
+  - id: nvidia_shader_cache
+    name: "NVIDIA 着色器缓存"
+    category: "系统缓存"
+    description: "NVIDIA 驱动缓存"
+    sources: ["%LOCALAPPDATA%\\NVIDIA\\GLCache", "%LOCALAPPDATA%\\NVIDIA\\DXCache"]
+    methods: [junction]
+    associated_processes: []
+    risk: L2
+    os_min: "10.0"
+
+  - id: temp_dirs
+    name: "临时文件目录"
+    category: "系统缓存"
+    description: "%TEMP% 与 Local\\Temp"
+    sources: ["%LOCALAPPDATA%\\Temp", "%TEMP%"]
+    methods: [junction, config]
+    associated_processes: []
+    risk: L2
+    os_min: "10.0"
+    config_patch:
+      - type: env
+        name: TEMP
+        value: "<NEW>"
+      - type: env
+        name: TMP
+        value: "<NEW>"
+    notes: "改 TEMP/TMP 环境变量会影响全局临时目录位置；默认用 junction 更稳妥。"
